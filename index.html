@@ -6,14 +6,14 @@
 		<script src="lib/three.min.js"></script>
 		<script src="lib/OrbitControls.js"></script>
 		<script src="lib/matter-dev.js"></script>
-		<script src="lib/jquery-1.11.0.min.js"></script>
+		<script src="lib/poly-decomp.js"></script>
+        <script src="lib/jquery-1.11.0.min.js"></script>
 		<script src="js/main.js"></script>
 		<style type="text/css">
 			div#canvas-frame {
 				border: none;
 				cursor: pointer;
 				width: 100%;
-				height: 600px;
 				background-color: #EEEEEE;
 			}
 
@@ -22,41 +22,5 @@
 
 	<body onload="init();">
         <div id="canvas-frame"></div>
-        
-        <script type="text/javascript">
-            var block = document.getElementById("canvas-frame");
-            block.addEventListener("touchstart",function(e){
-                onTouchStart(e);
-        
-                block.addEventListener("touchmove",function(e) {
-                    onTouchMove(e);
-                },false)
-            },false)
-        
-        
-            // 为了避免移动端事件的默认行为对交互效果产生影响，建议阻止事件的默认行为，
-            // 但这时不拖动div的时候默认事件也被取消了，解决方案，请看下一节
-            document.addEventListener("touchmove",function(e){
-                e.preventDefault();
-                onTouchMove(e);
-            },false)
-
-            document.addEventListener("touchup",function(e){
-                onTouchUp(e);
-            },false)
-
-
-            document.addEventListener('mousedown',function(e){
-                onMouseDown(e);
-            },false)
-            document.addEventListener('mousemove',function(e){
-                onMouseMove(e)
-             },false)
-            document.addEventListener('mouseup',function(e){
-                onMouseUp(e);
-             },false)
-
-            </script>
-
 	</body>
 </html>

@@ -1,23 +1,118 @@
+
 var Engine=Matter.Engine,
     Render=Matter.Render,
     World=Matter.World,
     Bodies=Matter.Bodies,
     Body=Matter.Body
 
+var engine,world,render;
+
 var downif=false;
 
-function init() {
-    var engine=Engine.create(),
-        world=engine.world,
-        render=Render.create({
-            engine:engine,
-            element:document.body,
-            options:{
-                width:window.innerWidth,
-                height:window.innerHeight,
-                wireframes:false
-            }
-        });
+var camera, scene, renderer;
+var cameraOrtho, sceneOrtho;
+
+var spriteTL, spriteTR, spriteBL, spriteBR, spriteC;
+var line;
+
+var mapC;
+
+var group;
+
+function screen2three(x,y){
+    var pos = new THREE.Vector2();
+    pos.x = x - window.innerWidth + window.innerWidth * 0.5;
+    pos.y = -(y - window.innerHeight + window.innerHeight * 0.5);
+    return pos;
+}
+
+function setupInput(){
+    var self = this;
+    document.addEventListener('mousedown',function(e){
+        self.onMouseDown(e)
+    },false)
+    document.addEventListener('mousemove',function(e){
+        self.onMouseMove(e)
+    },false)
+    document.addEventListener('mouseup',function(e){
+        self.onMouseUp(e)
+    },false)
+
+    document.addEventListener("touchstart",function(e){
+        self.onTouchBegin(e);
+    },false)
+
+    document.addEventListener("touchmove",function(e){
+        e.preventDefault();
+        self.onTouchMove(e);
+    },false)
+
+    document.addEventListener("touchup",function(e){
+        self.onTouchEnd(e);
+    },false)
+}
+
+function initCamera(){
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+
+    camera = new THREE.PerspectiveCamera( 60, width / height, 1, 2100 );
+    camera.position.z = 1500;
+
+    cameraOrtho = new THREE.OrthographicCamera( - width / 2, width / 2, height / 2, - height / 2, 1, 10 );
+    cameraOrtho.position.z = 10;
+}
+
+function initScene(){
+    scene = new THREE.Scene();
+    scene.fog = new THREE.Fog( 0x000000, 1500, 2100 );
+
+    sceneOrtho = new THREE.Scene();
+}
+
+var threeGround;
+var threeGroup;
+function initObject(){
+    var width = window.innerWidth;
+    var height = window.innerWidth;
+
+    var geometryGround = new THREE.CubeGeometry(window.innerWidth, 100, 0);
+    var materialGround = new THREE.MeshBasicMaterial({
+            color : 0xff0000
+        })
+    threeGround = new THREE.Mesh(geometryGround, materialGround);
+    threeGround.position.set(0, -height+100, 1);
+    sceneOrtho.add(threeGround);
+    
+    var matterGround=Bodies.rectangle(window.innerWidth/2,window.innerHeight-100,window.innerWidth,100,{isStatic:true});
+    World.add(world, [matterGround]);
+
+    updateHUD();
+}
+
+function initRenderer(){
+    // renderer
+    renderer = new THREE.WebGLRenderer();
+    renderer.setPixelRatio( window.devicePixelRatio );
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    renderer.autoClear = false; // To allow render overlay on top of sprited sphere
+
+    document.body.appendChild( renderer.domElement );
+}
+
+function initPhysics(){
+    engine=Engine.create(),
+    world=engine.world,
+
+    render=Render.create({
+        engine:engine,
+        element:document.body,
+        options:{
+            width:window.innerWidth,
+            height:window.innerHeight,
+            wireframes:false
+        }
+    });
 
     Engine.run(engine);
     Render.run(render);
@@ -25,22 +120,85 @@ function init() {
     var boxA=Bodies.rectangle(300,300,500,100),
         boxB=Bodies.rectangle(300,300,100,500);
     var ground=Bodies.rectangle(window.innerWidth/2,window.innerHeight-100,window.innerWidth,100,{isStatic:true});
+
     var cup=Body.create({
         parts:[boxA,boxB]
     });
 
-
-    World.add(world,[cup,ground]);
-    
+    // World.add(world,[ground]);
 }
 
-//touchstart类似mousedown
-var onTouchStart = function(e){
-    //事件的touches属性是一个数组，其中一个元素代表同一时刻的一个触控点，从而可以通过touches获取多点触控的每个触控点
-    //由于我们只有一点触控，所以直接指向[0]
+function init() {
+    setupInput();
+    
+    initPhysics();
+
+    initCamera();
+    initScene();
+    initObject();
+    initRenderer();
+
+    //
+    window.addEventListener( 'resize', onWindowResize, false );
+    animate();
+}
+
+function onWindowResize() {
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+
+    cameraOrtho.left = - width / 2;
+    cameraOrtho.right = width / 2;
+    cameraOrtho.top = height / 2;
+    cameraOrtho.bottom = - height / 2;
+    cameraOrtho.updateProjectionMatrix();
+
+    updateHUD();
+
+    renderer.setSize( window.innerWidth, window.innerHeight );
+
+}
+
+function updateHUD() {
+    var width = window.innerWidth / 2;
+    var height = window.innerHeight / 2;
+
+    threeGround.position.set(0, -height+100, 1);
+    
+    // for(var i = 0; i < threeGroup.children.length; i++){
+    //     var l = threeGroup.children[i];
+    //     if(l){
+    //         l.position.set(0, 0, 1);
+    //     }
+    // }
+}
+
+function animate() {
+    requestAnimationFrame( animate );
+    threeRender();
+}
+
+function threeRender() {
+
+    // for(var i = 0; i < threeGroup.children.length; i++){
+    //     var l = threeGroup.children[i];
+    //     if(l){
+    //         l.position.set(0, 0, 1);
+    //     }
+    // }
+
+    renderer.clear();
+    renderer.render( scene, camera );
+    renderer.clearDepth();
+    renderer.render( sceneOrtho, cameraOrtho );
+}
+
+var onTouchBegin = function(e){
     var touch = e.touches[0];
 
-    //获取当前触控点的坐标，等同于MouseEvent事件的clientX/clientY
     var x = touch.clientX;
     var y = touch.clientY;
     mouseDown(x, y);
@@ -51,13 +209,7 @@ var onMouseDown = function(e){
     mouseDown(x,y);
 };
 
-function mouseDown(x, y){
-    downif=true;
-}
-
-//touchmove类似mousemove
 var onTouchMove = function(e){
-    //可为touchstart、touchmove事件加上preventDefault从而阻止触摸时浏览器的缩放、滚动条滚动等
     e.preventDefault();
     var touch = e.touches[0];
     var x = touch.clientX;
@@ -65,21 +217,13 @@ var onTouchMove = function(e){
     mouseMove(x,y);
 };
 var onMouseMove = function(e){
-    //可为touchstart、touchmove事件加上preventDefault从而阻止触摸时浏览器的缩放、滚动条滚动等
     e.preventDefault();
     var x = e.clientX;
     var y = e.clientY;
     mouseMove(x,y);
 };
 
-function mouseMove(x,y){
-    if(downif){
-        console.log("!!!!!!!!!!!!!!!!!!!!!", x, y);
-    }
-}
-
-//touchend类似mouseup
-var onTouchUp = function(e){
+var onTouchEnd = function(e){
     var touch = e.touches[0];
     var x = touch.clientX;
     var y = touch.clientY;
@@ -90,8 +234,61 @@ var onMouseUp = function(e){
     var y = e.clientY;
     mouseUp(x,y);
 };
-function mouseUp(x,y){
-    downif=false;
+
+var pointsList=[];
+var last_x,last_y;
+function mouseDown(x, y){
+    downif=true;
+    pointsList=[];
+    threeGroup = new THREE.Group();
+    sceneOrtho.add(threeGround);
+    last_x = lasy_y = null;
 }
 
-window.addEventListener('load', init);
+function mouseMove(x,y){
+    if(downif){
+        var screen_pos = screen2three(x, y);
+        var screen_x = screen_pos.x;
+        var screen_y = screen_pos.y;
+        if(last_x && last_y){
+            var geometry = new THREE.Geometry();
+            var materialLine = new THREE.LineBasicMaterial({ color:0xff0000 });
+            var p1 = new THREE.Vector3(last_x, last_y, 1);
+            var p2 = new THREE.Vector3(screen_x, screen_y, 1);
+            geometry.vertices.push(p1);
+            geometry.vertices.push(p2);
+            var l = new THREE.Line(geometry, materialLine, THREE.LineSegments );
+            threeGroup.add(l);
+            
+            pointsList.push([p1, p2]);
+        }
+        
+        last_x = screen_x;
+        last_y = screen_y;
+    }
+}
+
+function mouseUp(x,y){
+    downif=false;
+    
+    if(pointsList.length > 0){
+        var arr=[];
+        for(var i = 0; i < pointsList.length; ++i){
+            var p1 = pointsList[i][0];
+            var p2 = pointsList[i][1];
+            
+            var len = p2.distanceTo(p1);
+            var mx = (p1.x + p2.x) * 0.5;
+            var my = (p1.y + p2.y) * 0.5;
+            var matterObj=Bodies.rectangle(mx, my, len, 1);
+            var angle = Math.asin((p2.y - p1.y)/len);
+            Body.rotate(matterObj, angle);
+            arr.push(matterObj);
+        }
+        var shape=Body.create({
+            parts:arr
+        });
+
+        World.add(world,[shape]);
+    }
+}
