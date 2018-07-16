@@ -71,7 +71,9 @@ function initScene(){
 }
 
 var threeGround;
-var threeGroup;
+var threeGroupArr=[];
+var matterGroupArr=[];
+
 function initObject(){
     var width = window.innerWidth;
     var height = window.innerWidth;
@@ -84,6 +86,8 @@ function initObject(){
     threeGround.position.set(0, -height+100, 1);
     sceneOrtho.add(threeGround);
     
+    sceneOrtho.add(threeGround);
+
     var matterGround=Bodies.rectangle(window.innerWidth/2,window.innerHeight-100,window.innerWidth,100,{isStatic:true});
     World.add(world, [matterGround]);
 
@@ -168,12 +172,17 @@ function updateHUD() {
 
     threeGround.position.set(0, -height+100, 1);
     
-    // for(var i = 0; i < threeGroup.children.length; i++){
-    //     var l = threeGroup.children[i];
-    //     if(l){
-    //         l.position.set(0, 0, 1);
-    //     }
-    // }
+    for(var j = 0; j < threeGroupArr.length; j++){
+        var threeGroup = threeGroupArr[j];
+        if(threeGroup){
+            for(var i = 0; i < threeGroup.children.length; i++){
+                var l = threeGroup.children[i];
+                if(l){
+                    l.position.set(0, 0, 1);
+                }
+            }
+        }
+    }
 }
 
 function animate() {
@@ -183,12 +192,19 @@ function animate() {
 
 function threeRender() {
 
-    // for(var i = 0; i < threeGroup.children.length; i++){
-    //     var l = threeGroup.children[i];
-    //     if(l){
-    //         l.position.set(0, 0, 1);
-    //     }
-    // }
+    for(var j = 0; j < threeGroupArr.length; j++){
+        var threeGroup = threeGroupArr[j];
+        var matterGroup = matterGroupArr[j];
+        if(threeGroup && matterGroup){
+            for(var i = 0; i < threeGroup.children.length; i++){
+                var l = threeGroup.children[i];
+                var m = matterGroup.parts[i+1];
+                if(l && m){
+                    l.position.set(m.position.x, m.position.y, 1);
+                }
+            }
+        }
+    }
 
     renderer.clear();
     renderer.render( scene, camera );
@@ -236,13 +252,15 @@ var onMouseUp = function(e){
 };
 
 var pointsList=[];
+var threeGroup = null;
 var last_x,last_y;
 function mouseDown(x, y){
     downif=true;
     pointsList=[];
-    threeGroup = new THREE.Group();
-    sceneOrtho.add(threeGround);
     last_x = lasy_y = null;
+    threeGroup = new THREE.Group();
+    sceneOrtho.add(threeGroup);
+    threeGroupArr.push(threeGroup);
 }
 
 function mouseMove(x,y){
@@ -259,7 +277,6 @@ function mouseMove(x,y){
             geometry.vertices.push(p2);
             var l = new THREE.Line(geometry, materialLine, THREE.LineSegments );
             threeGroup.add(l);
-            
             pointsList.push([p1, p2]);
         }
         
@@ -288,7 +305,7 @@ function mouseUp(x,y){
         var shape=Body.create({
             parts:arr
         });
-
+        matterGroupArr.push(shape);
         World.add(world,[shape]);
     }
 }
