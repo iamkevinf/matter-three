@@ -21,8 +21,14 @@ var group;
 
 function screen2three(x,y){
     var pos = new THREE.Vector2();
-    pos.x = x - window.innerWidth + window.innerWidth * 0.5;
-    pos.y = -(y - window.innerHeight + window.innerHeight * 0.5);
+    pos.x = x - window.innerWidth * 0.5;
+    pos.y = window.innerHeight * 0.5 - y;
+    return pos;
+}
+function three2screen(x,y){
+    var pos = new THREE.Vector2();
+    pos.x = x + window.innerWidth * 0.5;
+    pos.y = window.innerHeight * 0.5 - y;
     return pos;
 }
 
@@ -76,19 +82,21 @@ var matterGroupArr=[];
 
 function initObject(){
     var width = window.innerWidth;
-    var height = window.innerWidth;
+    var height = window.innerHeight;
 
-    var geometryGround = new THREE.CubeGeometry(window.innerWidth, 100, 0);
+    var pos_three = new THREE.Vector2(0, -height*0.5+10);
+    var pos_matter = three2screen(pos_three.x, pos_three.y);
+
+    var geometryGround = new THREE.CubeGeometry(width, 10, 1);
     var materialGround = new THREE.MeshBasicMaterial({
-            color : 0xff0000
+            color : 0xb8b8b8
         })
+
     threeGround = new THREE.Mesh(geometryGround, materialGround);
-    threeGround.position.set(0, -height+100, 1);
-    sceneOrtho.add(threeGround);
-    
+    threeGround.position.set(pos_three.x, pos_three.y, 1);
     sceneOrtho.add(threeGround);
 
-    var matterGround=Bodies.rectangle(window.innerWidth/2,window.innerHeight-100,window.innerWidth,100,{isStatic:true});
+    var matterGround=Bodies.rectangle(pos_matter.x, pos_matter.y,width,10,{isStatic:true});
     World.add(world, [matterGround]);
 
     updateHUD();
@@ -120,16 +128,6 @@ function initPhysics(){
 
     Engine.run(engine);
     Render.run(render);
-
-    var boxA=Bodies.rectangle(300,300,500,100),
-        boxB=Bodies.rectangle(300,300,100,500);
-    var ground=Bodies.rectangle(window.innerWidth/2,window.innerHeight-100,window.innerWidth,100,{isStatic:true});
-
-    var cup=Body.create({
-        parts:[boxA,boxB]
-    });
-
-    // World.add(world,[ground]);
 }
 
 function init() {
@@ -174,11 +172,14 @@ function updateHUD() {
     
     for(var j = 0; j < threeGroupArr.length; j++){
         var threeGroup = threeGroupArr[j];
-        if(threeGroup){
+        var matterGroup = matterGroupArr[j];
+        if(threeGroup && matterGroup){
             for(var i = 0; i < threeGroup.children.length; i++){
                 var l = threeGroup.children[i];
-                if(l){
-                    l.position.set(0, 0, 1);
+                var m = matterGroup.parts[i+1];
+                if(l && m){
+                    var pos = screen2three(m.position.x, m.position.y);
+                    l.position.set(pos.x, pos.y, 1);
                 }
             }
         }
@@ -200,7 +201,8 @@ function threeRender() {
                 var l = threeGroup.children[i];
                 var m = matterGroup.parts[i+1];
                 if(l && m){
-                    l.position.set(m.position.x, m.position.y, 1);
+                    var pos = screen2three(m.position.x, m.position.y);
+                    l.position.set(pos.x, pos.y, 1);
                 }
             }
         }
@@ -293,13 +295,17 @@ function mouseUp(x,y){
         for(var i = 0; i < pointsList.length; ++i){
             var p1 = pointsList[i][0];
             var p2 = pointsList[i][1];
+            p1 = three2screen(p1.x, p1.y);
+            p2 = three2screen(p2.x, p2.y);
             
             var len = p2.distanceTo(p1);
             var mx = (p1.x + p2.x) * 0.5;
             var my = (p1.y + p2.y) * 0.5;
-            var matterObj=Bodies.rectangle(mx, my, len, 1);
+            var matterObj=Bodies.rectangle(mx, my, len, 10);
             var angle = Math.asin((p2.y - p1.y)/len);
             Body.rotate(matterObj, angle);
+            matterObj.position.x = window.innerWidth * 0.5;
+            matterObj.position.y = window.innerHeight* 0.5;
             arr.push(matterObj);
         }
         var shape=Body.create({
